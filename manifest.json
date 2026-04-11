@@ -1,0 +1,9 @@
+{
+  "id": "obsidian2mp",
+  "name": "Obsidian2MP",
+  "version": "0.5.0",
+  "minAppVersion": "0.15.0",
+  "description": "Push Obsidian notes to WeChat Official Account (公众号) with Markdown beautification support",
+  "author": "liuym",
+  "isDesktopOnly": false
+}

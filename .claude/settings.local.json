@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"D:\\\\Users\\\\liuym\\\\WorkBuddy\\\\obsidian2mp\" status)",
+      "WebFetch(domain:www.md2wechat.cn)",
+      "WebSearch",
+      "WebFetch(domain:md2wechat.cn)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(ls:*)",
+      "Bash(node -e \"const ws = require\\(''./src/platforms/wechat.ts''\\); console.log\\(''WeChatAdapter:'', typeof ws.WeChatAdapter, ''supportsDirectPublish:'', ws.WeChatAdapter?.prototype?.supportsDirectPublish?.toString\\(\\)\\)\")",
+      "WebFetch(domain:lucide.dev)",
+      "Bash(npx rollup:*)",
+      "WebFetch(domain:obsidian.md)",
+      "WebFetch(domain:github.com)",
+      "Bash(git clone:*)"
+    ]
+  }
+}
