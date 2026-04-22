@@ -1,7 +1,8 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import Obsidian2MPPlugin from "./main";
 import { getAllThemes } from "./converter";
-import { WeChatMPClient } from "./platforms";
+import { WeChatMPClient, FeishuClient, NotionClient } from "./platforms";
+import { WECHAT_PUBLIC_ACCOUNT } from "./donation";
 
 export interface Obsidian2MPSettings {
   defaultTheme: string;
@@ -207,6 +208,44 @@ export class Obsidian2MPSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
+    // 飞书连接测试按钮
+    new Setting(containerEl)
+      .setName("测试连接")
+      .setDesc("测试飞书 API 连通性")
+      .addButton(button => {
+        button
+          .setButtonText("测试连接")
+          .onClick(async () => {
+            if (!this.plugin.settings.feishuAppId || !this.plugin.settings.feishuAppSecret) {
+              new Notice("请先配置 AppID 和 AppSecret");
+              return;
+            }
+
+            button.setDisabled(true);
+            button.setButtonText("测试中...");
+
+            try {
+              const client = new FeishuClient({
+                appId: this.plugin.settings.feishuAppId,
+                appSecret: this.plugin.settings.feishuAppSecret,
+              });
+
+              const error = await client.testConnection();
+
+              if (error) {
+                new Notice(`❌ 连接失败: ${error}`);
+              } else {
+                new Notice("✅ 连接成功！Access Token 获取正常");
+              }
+            } catch (e) {
+              new Notice(`❌ 连接失败: ${e instanceof Error ? e.message : '未知错误'}`);
+            } finally {
+              button.setDisabled(false);
+              button.setButtonText("测试连接");
+            }
+          });
+      });
+
     // Notion 配置
     containerEl.createEl('h3', { text: 'Notion 配置' });
 
@@ -228,6 +267,43 @@ export class Obsidian2MPSettingTab extends PluginSettingTab {
           this.plugin.settings.notionIntegrationToken = value;
           await this.plugin.saveSettings();
         }));
+
+    // Notion 连接测试按钮
+    new Setting(containerEl)
+      .setName("测试连接")
+      .setDesc("测试 Notion API 连通性")
+      .addButton(button => {
+        button
+          .setButtonText("测试连接")
+          .onClick(async () => {
+            if (!this.plugin.settings.notionIntegrationToken) {
+              new Notice("请先配置 Integration Token");
+              return;
+            }
+
+            button.setDisabled(true);
+            button.setButtonText("测试中...");
+
+            try {
+              const client = new NotionClient({
+                integrationToken: this.plugin.settings.notionIntegrationToken,
+              });
+
+              const error = await client.testConnection();
+
+              if (error) {
+                new Notice(`❌ 连接失败: ${error}`);
+              } else {
+                new Notice("✅ 连接成功！Token 验证通过");
+              }
+            } catch (e) {
+              new Notice(`❌ 连接失败: ${e instanceof Error ? e.message : '未知错误'}`);
+            } finally {
+              button.setDisabled(false);
+              button.setButtonText("测试连接");
+            }
+          });
+      });
 
     new Setting(containerEl)
       .setName("Parent Page ID")
@@ -264,6 +340,16 @@ export class Obsidian2MPSettingTab extends PluginSettingTab {
         <li>📢 推荐给你身边写公众号的朋友</li>
       </ul>
       <p>GitHub: <a href="https://github.com/popomonkey/obsidian2mp" target="_blank">popomonkey/obsidian2mp</a></p>
+    `;
+
+    // 关注公众号区域
+    const followSection = containerEl.createDiv('follow-section');
+    followSection.style.cssText = 'margin-top: 20px; padding: 16px; background: var(--background-secondary); border-radius: 8px; text-align: center;';
+    followSection.innerHTML = `
+      <p style="margin: 0 0 12px 0; font-weight: bold; color: var(--text-normal);">📢 关注公众号</p>
+      <p style="margin: 0 0 12px 0; color: var(--text-muted); font-size: 12px;">扫码关注，获取更多插件动态和更新通知</p>
+      <img src="${WECHAT_PUBLIC_ACCOUNT.qrcode}" alt="${WECHAT_PUBLIC_ACCOUNT.name}" style="width: 160px; height: 160px; border-radius: 8px; margin: 8px 0;">
+      <p style="margin: 8px 0 0 0; color: var(--text-muted); font-size: 12px;">${WECHAT_PUBLIC_ACCOUNT.name}</p>
     `;
   }
 }

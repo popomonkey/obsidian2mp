@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -36,7 +36,7 @@ src/
 ## Key Features
 
 1. **Push to WeChat MP**: Converts Markdown to WeChat-compatible HTML and copies to clipboard
-2. **Beautify Markdown**: Hooks for calling AI skills (e.g., Claude API) to beautify content before push
+2. **Beautify Markdown**: Hooks for calling AI skills (e.g., Codex API) to beautify content before push
 3. **Direct API Push** (TODO): Optional direct publishing via WeChat MP API with configured credentials
 
 ## WeChat MP Integration

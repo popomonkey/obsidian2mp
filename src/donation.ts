@@ -8,7 +8,7 @@ import { Modal, Setting, Notice } from 'obsidian';
 /**
  * 微信公众号二维码（请替换成你自己的）
  */
-const WECHAT_PUBLIC_ACCOUNT = {
+export const WECHAT_PUBLIC_ACCOUNT = {
   qrcode: 'https://s41.ax1x.com/2026/04/10/pew3FMV.jpg', // 微信公众号二维码
   name: 'PM智圈|PMAIhub', // 公众号名称（用于显示）
 };

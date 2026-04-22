@@ -3,6 +3,7 @@
  * 将 Markdown 转换为 Notion 块并支持 API 发布
  */
 
+import { requestUrl } from 'obsidian';
 import { BasePlatformAdapter } from './base';
 import type { ConvertOptions, PublishOptions, PublishResult } from './base';
 
@@ -94,15 +95,16 @@ export class NotionClient {
         children: await this.parseMarkdownToBlocks(content),
       };
 
-      const response = await fetch(`${this.baseUrl}/pages`, {
+      const resp = await requestUrl({
+        url: `${this.baseUrl}/pages`,
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
+      const data = resp.json;
 
-      if (response.ok) {
+      if (resp.status === 200) {
         return {
           success: true,
           pageId: data.id,
@@ -357,13 +359,39 @@ export class NotionClient {
       if (!this.config.integrationToken) {
         return false;
       }
-      const response = await fetch(`${this.baseUrl}/users/me`, {
+      const resp = await requestUrl({
+        url: `${this.baseUrl}/users/me`,
+        method: 'GET',
         headers: this.getHeaders(),
       });
-      return response.ok;
+      return resp.status === 200;
     } catch (error) {
       console.error('Notion API check failed:', error);
       return false;
+    }
+  }
+
+  /**
+   * 测试连接
+   */
+  async testConnection(): Promise<string | null> {
+    if (!this.config.integrationToken) {
+      return '请先配置 Notion Integration Token';
+    }
+
+    try {
+      const resp = await requestUrl({
+        url: `${this.baseUrl}/users/me`,
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+
+      if (resp.status === 200) {
+        return null; // 成功
+      }
+      return resp.json?.message || '连接失败';
+    } catch (error) {
+      return error instanceof Error ? error.message : '连接测试失败';
     }
   }
 }

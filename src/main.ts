@@ -2,7 +2,7 @@ import { Plugin, Notice, Editor, MarkdownView, WorkspaceSidedock } from "obsidia
 import { Obsidian2MPSettingTab, Obsidian2MPSettings } from "./settings";
 import { markdownToWeChatHTML, getTheme } from "./converter";
 import { PreviewModal } from "./ui/preview-modal";
-import { WeChatMPClient } from "./platforms";
+import { WeChatMPClient, FeishuAdapter, NotionAdapter } from "./platforms";
 
 /**
  * Obsidian2MP Plugin
@@ -55,6 +55,30 @@ export default class Obsidian2MPPlugin extends Plugin {
       },
       callback: () => {
         this.publishToWeChatDraft();
+      }
+    });
+
+    // Add command - publish to Feishu
+    this.addCommand({
+      id: "publish-to-feishu",
+      name: "Publish: Create Feishu Document (API)",
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        this.publishToFeishu();
+      },
+      callback: () => {
+        this.publishToFeishu();
+      }
+    });
+
+    // Add command - publish to Notion
+    this.addCommand({
+      id: "publish-to-notion",
+      name: "Publish: Create Notion Page (API)",
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        this.publishToNotion();
+      },
+      callback: () => {
+        this.publishToNotion();
       }
     });
   }
@@ -133,9 +157,15 @@ export default class Obsidian2MPPlugin extends Plugin {
       // Convert markdown to HTML
       const html = markdownToWeChatHTML(markdown, theme);
 
-      // Copy to clipboard
-      await navigator.clipboard.writeText(html);
-      new Notice("✅ HTML copied to clipboard! Paste it in WeChat MP editor");
+      // Copy to clipboard as rich text (HTML) for WeChat MP to recognize
+      try {
+        await this.copyAsRichText(html);
+        new Notice("✅ HTML copied to clipboard! Paste it in WeChat MP editor");
+      } catch (e) {
+        // Fallback to plain text if rich text copy fails
+        await navigator.clipboard.writeText(html);
+        new Notice("✅ HTML copied to clipboard! (plain text mode)");
+      }
     } catch (error) {
       console.error("Push to WeChat MP failed:", error);
       new Notice("Failed to push to WeChat MP. Check console for details.");
@@ -242,6 +272,128 @@ export default class Obsidian2MPPlugin extends Plugin {
       console.error("Publish to WeChat draft failed:", error);
       new Notice(`Failed to create draft: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Publish current note to Feishu Document via API
+   */
+  async publishToFeishu() {
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+    if (!view) {
+      new Notice("Please open a note first");
+      return;
+    }
+
+    // 检查配置
+    if (!this.settings.feishuAppId || !this.settings.feishuAppSecret) {
+      new Notice("Please configure Feishu AppID and AppSecret in settings first");
+      this.openPluginSettings();
+      return;
+    }
+
+    const markdown = view.editor.getValue();
+
+    try {
+      const feishuAdapter = new FeishuAdapter();
+      const title = this.extractTitle(markdown);
+
+      new Notice("Creating Feishu document...");
+
+      const result = await feishuAdapter.publish(markdown, {
+        title,
+        feishuConfig: {
+          appId: this.settings.feishuAppId,
+          appSecret: this.settings.feishuAppSecret,
+        },
+      });
+
+      if (result.success) {
+        new Notice(`✅ 飞书文档已创建！\n${result.url}`);
+
+        // 打开链接
+        const { shell } = require('electron');
+        shell.openExternal(result.url!);
+      } else {
+        new Notice(`❌ 创建失败: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Publish to Feishu failed:", error);
+      new Notice(`Failed to create document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Publish current note to Notion Page via API
+   */
+  async publishToNotion() {
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+    if (!view) {
+      new Notice("Please open a note first");
+      return;
+    }
+
+    // 检查配置
+    if (!this.settings.notionIntegrationToken) {
+      new Notice("Please configure Notion Integration Token in settings first");
+      this.openPluginSettings();
+      return;
+    }
+
+    const markdown = view.editor.getValue();
+
+    try {
+      const notionAdapter = new NotionAdapter();
+      const title = this.extractTitle(markdown);
+
+      new Notice("Creating Notion page...");
+
+      const result = await notionAdapter.publish(markdown, {
+        title,
+        notionConfig: {
+          integrationToken: this.settings.notionIntegrationToken,
+          databaseId: this.settings.notionDatabaseId,
+          parentPageId: this.settings.notionParentPageId,
+        },
+      });
+
+      if (result.success) {
+        new Notice(`✅ Notion 页面已创建！\n${result.url}`);
+
+        // 打开链接
+        const { shell } = require('electron');
+        shell.openExternal(result.url!);
+      } else {
+        new Notice(`❌ 创建失败: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Publish to Notion failed:", error);
+      new Notice(`Failed to create page: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * 提取 Markdown 标题
+   */
+  private extractTitle(markdown: string): string {
+    const match = markdown.match(/^#\s+(.+)$/m);
+    return match ? match[1].trim() : '无标题';
+  }
+
+  /**
+   * 复制富文本（HTML）到剪贴板
+   * 微信公众号需要富文本格式才能正确识别样式
+   */
+  private async copyAsRichText(html: string): Promise<void> {
+    // 使用 Clipboard API 的 write 方法，传入 text/html 类型
+    const blob = new Blob([html], { type: 'text/html' });
+    const plainText = new Blob([html], { type: 'text/plain' });
+
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': blob,
+        'text/plain': plainText,
+      }),
+    ]);
   }
 
   async loadSettings() {

@@ -29,7 +29,43 @@ export function markdownToWeChatHTML(markdown: string, theme: WeChatTheme): stri
   const rawHtml = marked.parse(markdown, { async: false }) as string;
 
   // 注入主题样式
-  return injectThemeStyles(rawHtml, theme);
+  let html = injectThemeStyles(rawHtml, theme);
+
+  // 应用微信公众号特殊格式适配
+  html = adaptToWeChatMP(html);
+
+  return html;
+}
+
+/**
+ * 适配微信公众号的 HTML 格式要求
+ */
+function adaptToWeChatMP(html: string): string {
+  let result = html;
+
+  // 1. 图片处理：微信公众号需要 data-src 属性
+  result = result.replace(/<img([^>]*)src="([^"]*)"([^>]*)>/g,
+    (match, before, src, after) => {
+      // 已经有 data-src 的跳过
+      if (match.includes('data-src')) {
+        return match;
+      }
+      // 将 src 转为 data-src，保留一个空的 src 兼容其他编辑器
+      const newTag = `<img${before}data-src="${src}"${after} data-mce-src="${src}" data-mce-style="max-width: 100%;">`;
+      return newTag;
+    }
+  );
+
+  // 2. 添加 XML 注释包裹，确保格式被识别
+  // 微信公众号有时需要这种格式
+  result = result.replace(/^(<!DOCTYPE html>)?/i, '');
+
+  // 3. 确保有正确的文档类型注释（可选，帮助识别）
+  if (!result.includes('<!--html-->') && !result.startsWith('<!DOCTYPE')) {
+    result = `<!--html-->\n${result}`;
+  }
+
+  return result;
 }
 
 /**

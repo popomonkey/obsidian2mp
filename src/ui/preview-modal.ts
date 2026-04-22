@@ -524,16 +524,35 @@ export class PreviewModal extends Modal {
   private async copyContent() {
     try {
       let content: string;
+      let isRichText = false;
 
       if (this.currentPlatform === 'wechat') {
-        // 微信公众号：复制 HTML
+        // 微信公众号：复制 HTML（需要富文本格式）
         content = markdownToWeChatHTML(this.markdown, this.currentTheme);
+        isRichText = true;
       } else {
-        // 知乎/掘金：复制 Markdown
+        // 飞书/Notion：复制 Markdown
         content = this.markdown;
       }
 
-      await navigator.clipboard.writeText(content);
+      if (isRichText) {
+        // 使用富文本格式复制（微信公众号需要）
+        try {
+          const blob = new Blob([content], { type: 'text/html' });
+          const plainText = new Blob([content], { type: 'text/plain' });
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/html': blob,
+              'text/plain': plainText,
+            }),
+          ]);
+        } catch (e) {
+          // 降级到纯文本
+          await navigator.clipboard.writeText(content);
+        }
+      } else {
+        await navigator.clipboard.writeText(content);
+      }
 
       // 显示成功提示
       const platformNames: Record<PlatformType, string> = {
