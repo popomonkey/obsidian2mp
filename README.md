@@ -192,21 +192,6 @@ npm run typecheck
 - ✅ 项目骨架搭建
 - ✅ 基础 Markdown 转 HTML
 
-## 路线图
-
-### Phase 5: 完全免费 (v0.4.0)
-
-- [x] 移除会员系统，改为完全免费
-- [x] 关注公众号功能（设置页面入口，无任何打扰）
-- [x] 文档更新
-
-### Phase 6: 高级功能 (v0.5.0)
-
-- [ ] 自定义主题模板
-- [ ] 金句卡片生成
-- [ ] 图片自动上传到素材库
-- [ ] 发布历史记录
-
 ## 反馈与支持
 
 如有问题或建议，请提交 [Issue](https://github.com/popomonkey/obsidian2mp/issues)。
